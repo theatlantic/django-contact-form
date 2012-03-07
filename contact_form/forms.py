@@ -254,6 +254,11 @@ class AkismetContactForm(ContactForm):
                                  'referer': self.request.META.get('HTTP_REFERER', ''),
                                  'user_ip': self.request.META.get('REMOTE_ADDR', ''),
                                  'user_agent': self.request.META.get('HTTP_USER_AGENT', '') }
-                if akismet_api.comment_check(smart_str(self.cleaned_data['body']), data=akismet_data, build_data=True):
+                try:
+                    akismet_check = akismet_api.comment_check(smart_str(self.cleaned_data['body']), data=akismet_data, build_data=True)
+                except AkismetError:
+                    raise forms.ValidationError(u"Akismet connection error, please try again later")
+                    
+                if akismet_check:
                     raise forms.ValidationError(u"Akismet thinks this message is spam")
         return self.cleaned_data['body']
