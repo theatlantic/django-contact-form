@@ -245,7 +245,7 @@ class AkismetContactForm(ContactForm):
         
         """
         if 'body' in self.cleaned_data and getattr(settings, 'AKISMET_API_KEY', ''):
-            from akismet import Akismet
+            from akismet import Akismet, AkismetError
             from django.utils.encoding import smart_str
             akismet_api = Akismet(key=settings.AKISMET_API_KEY,
                                   blog_url='http://%s/' % Site.objects.get_current().domain)
@@ -255,7 +255,8 @@ class AkismetContactForm(ContactForm):
                                  'user_ip': self.request.META.get('REMOTE_ADDR', ''),
                                  'user_agent': self.request.META.get('HTTP_USER_AGENT', '') }
                 try:
-                    akismet_check = akismet_api.comment_check(smart_str(self.cleaned_data['body']), data=akismet_data, build_data=True)
+                    akismet_check = akismet_api.comment_check(smart_str(self.cleaned_data['body']),
+                        data=akismet_data, build_data=True)
                 except AkismetError:
                     raise forms.ValidationError(u"Akismet connection error, please try again later")
                     
