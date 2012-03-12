@@ -249,17 +249,19 @@ class AkismetContactForm(ContactForm):
             from django.utils.encoding import smart_str
             akismet_api = Akismet(key=settings.AKISMET_API_KEY,
                                   blog_url='http://%s/' % Site.objects.get_current().domain)
-            if akismet_api.verify_key():
-                akismet_data = { 'comment_type': 'comment',
-                                 'referer': self.request.META.get('HTTP_REFERER', ''),
-                                 'user_ip': self.request.META.get('REMOTE_ADDR', ''),
-                                 'user_agent': self.request.META.get('HTTP_USER_AGENT', '') }
-                try:
+            try:
+                if akismet_api.verify_key():
+                    akismet_data = { 'comment_type': 'comment',
+                                     'referer': self.request.META.get('HTTP_REFERER', ''),
+                                     'user_ip': self.request.META.get('REMOTE_ADDR', ''),
+                                     'user_agent': self.request.META.get('HTTP_USER_AGENT', '') }
+
                     akismet_check = akismet_api.comment_check(smart_str(self.cleaned_data['body']),
                         data=akismet_data, build_data=True)
-                except AkismetError:
-                    raise forms.ValidationError(u"Akismet connection error, please try again later")
+            except AkismetError:
+                raise forms.ValidationError(u"Akismet connection error, please try again later")
                     
-                if akismet_check:
-                    raise forms.ValidationError(u"Akismet thinks this message is spam")
+            if akismet_check:
+                raise forms.ValidationError(u"Akismet thinks this message is spam")
+                
         return self.cleaned_data['body']
