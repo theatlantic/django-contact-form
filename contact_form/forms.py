@@ -11,6 +11,7 @@ from django.core.mail import EmailMessage
 from django.template import loader
 from django.template import RequestContext
 from django.contrib.sites.models import Site
+from django.utils.text import unescape_entities
 
 
 # I put this on all required fields, because it's easier to pick up
@@ -194,7 +195,8 @@ class ContactForm(forms.Form):
         """
         Build and send the email message.
         """
-        msg = EmailMessage(self.subject(), self.message(), self.from_email, self.recipient_list,
+        body = unescape_entities(self.message()) # convert &quot; back to "", etc.
+        msg = EmailMessage(self.subject(), body, self.from_email, self.recipient_list,
             headers={'Reply-To': self.reply_email()})
         msg.send(fail_silently=fail_silently)
 
