@@ -7,7 +7,7 @@ a web interface, and a subclass demonstrating useful functionality.
 
 from django import forms
 from django.conf import settings
-from django.core.mail import send_mail
+from django.core.mail import EmailMessage
 from django.template import loader
 from django.template import RequestContext
 from django.contrib.sites.models import Site
@@ -83,11 +83,6 @@ class ContactForm(forms.Form):
       determine which template to use for rendering the
       message. Default is ``contact_form/contact_form.txt``.
 
-    Internally, the base implementation ``_get_message_dict`` method
-    collects ``from_email``, ``message``, ``recipient_list`` and
-    ``subject`` into a dictionary, which the ``save`` method then
-    passes directly to ``send_mail`` as keyword arguments.
-
     Particularly important is the ``message`` attribute, with its base
     implementation as a method which renders a template; because it
     passes ``cleaned_data`` as the template context, any additional
@@ -116,11 +111,6 @@ class ContactForm(forms.Form):
     Subclasses which override ``__init__`` need to accept ``*args``
     and ``**kwargs``, and pass them via ``super`` in order to ensure
     proper behavior.
-
-    Subclasses should be careful if overriding ``_get_message_dict``,
-    since that method **must** return a dictionary suitable for
-    passing directly to ``send_mail`` (unless ``save`` is overridden
-    as well).
 
     Overriding ``save`` is relatively safe, though remember that code
     which uses your form will expect ``save`` to accept the
@@ -196,38 +186,17 @@ class ContactForm(forms.Form):
         return RequestContext(self.request,
                               dict(self.cleaned_data,
                                    site=Site.objects.get_current()))
-    
-    def get_message_dict(self):
-        """
-        Generate the various parts of the message and return them in a
-        dictionary, suitable for passing directly as keyword arguments
-        to ``django.core.mail.send_mail()``.
 
-        By default, the following values are returned:
-
-        * ``from_email``
-
-        * ``message``
-
-        * ``recipient_list``
-
-        * ``subject``
-        
-        """
-        if not self.is_valid():
-            raise ValueError("Message cannot be sent from invalid contact form")
-        message_dict = {}
-        for message_part in ('from_email', 'message', 'recipient_list', 'subject'):
-            attr = getattr(self, message_part)
-            message_dict[message_part] = callable(attr) and attr() or attr
-        return message_dict
+    def reply_email(self):
+        return self.cleaned_data.get('email')
     
     def save(self, fail_silently=False):
         """
         Build and send the email message.
-        
         """
-        send_mail(fail_silently=fail_silently, **self.get_message_dict())
+        msg = EmailMessage(self.subject(), self.message(), self.from_email, self.recipient_list,
+            headers={'Reply-To': self.reply_email()})
+        msg.send(fail_silently=fail_silently)
 
 
 class AkismetContactForm(ContactForm):
