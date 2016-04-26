@@ -1,7 +1,7 @@
 from distutils.core import setup
 
 setup(name='django-contact-form',
-      version='1.1.1',
+      version='1.1.2',
       description='Generic contact-form application for Django',
       author='James Bennett',
       author_email='james@b-list.org',
