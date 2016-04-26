@@ -9,7 +9,6 @@ from django import forms
 from django.conf import settings
 from django.core.mail import EmailMessage
 from django.template import loader
-from django.template import RequestContext
 from django.contrib.sites.models import Site
 from django.utils.text import unescape_entities
 
@@ -154,8 +153,8 @@ class ContactForm(forms.Form):
             template_name = self.template_name()
         else:
             template_name = self.template_name
-        return loader.render_to_string(template_name,
-                                       self.get_context())
+        return loader.render_to_string(template_name, self.get_context(),
+            request=self.request)
     
     def subject(self):
         """
@@ -163,7 +162,7 @@ class ContactForm(forms.Form):
         
         """
         subject = loader.render_to_string(self.subject_template_name,
-                                          self.get_context())
+            self.get_context(), request=self.request)
         return ''.join(subject.splitlines())
     
     def get_context(self):
@@ -184,9 +183,7 @@ class ContactForm(forms.Form):
         """
         if not self.is_valid():
             raise ValueError("Cannot generate Context from invalid contact form")
-        return RequestContext(self.request,
-                              dict(self.cleaned_data,
-                                   site=Site.objects.get_current()))
+        return dict(self.cleaned_data, site=Site.objects.get_current())
 
     def reply_email(self):
         return self.cleaned_data.get('email')
